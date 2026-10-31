@@ -92,4 +92,77 @@ function download(blob,name){let a=document.createElement('a');a.href=URL.create
 $('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!x||!Array.isArray(x.watch)||!Array.isArray(x.holdings)||!Array.isArray(x.trades))throw Error('檔案格式不正確');if(confirm('匯入會覆蓋本機現有資料，確定繼續？')){state=x;state.alerts=Array.isArray(x.alerts)?x.alerts:[];state.settings={feeRate:1.425,feeDiscount:.28,taxRate:3,stopLossPct:5,targetProfitPct:10,...x.settings};save();alert('備份還原完成')}}catch(err){alert('匯入失敗：'+err.message)}e.target.value=''};
 $('clearBtn').onclick=()=>{if(confirm('確定清除這台裝置上的所有股票資料？此操作無法復原，請先備份。')){localStorage.removeItem(KEY);state={watch:[],holdings:[],trades:[],alerts:[],settings:{feeRate:1.425,feeDiscount:.28,taxRate:3,stopLossPct:5,targetProfitPct:10}};save()}};
 load();render();checkStopStatus();setInterval(()=>{if(document.visibilityState==='visible'&&state.holdings.length)refreshAll()},180000);if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
-</script></body></html>
+// 股票代號自動帶入名稱
+const stockNameFallback = {
+  "00981A": "主動統一台股增長",
+  "2330": "台積電",
+  "0050": "元大台灣50",
+  "0056": "元大高股息",
+  "00878": "國泰永續高股息"
+};
+
+async function autoFillStockName(codeId, nameId) {
+  const codeInput = document.getElementById(codeId);
+  const nameInput = document.getElementById(nameId);
+
+  if (!codeInput || !nameInput) return;
+
+  const code = codeInput.value.trim().toUpperCase();
+  if (!code) return;
+
+  // 先使用已確認的名稱
+  if (stockNameFallback[code]) {
+    nameInput.value = stockNameFallback[code];
+    return;
+  }
+
+  // 再嘗試查詢交易所行情資料
+  nameInput.value = "查詢中…";
+
+  try {
+    for (const market of ["tse", "otc"]) {
+      const url =
+        "https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=" +
+        encodeURIComponent(market + "_" + code + ".tw") +
+        "&json=1&delay=0";
+
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      const stock = data.msgArray?.find(x => x.n);
+
+      if (stock && stock.n) {
+        nameInput.value = stock.n;
+        return;
+      }
+    }
+
+    nameInput.value = "";
+    alert("查不到此股票名稱，請確認代號是否正確。");
+  } catch (error) {
+    nameInput.value = stockNameFallback[code] || "";
+    if (!nameInput.value) {
+      alert("暫時無法查詢股票名稱，請稍後再試。");
+    }
+  }
+}
+
+["wCode", "hCode"].forEach(codeId => {
+  const input = document.getElementById(codeId);
+  if (input) {
+    input.addEventListener("change", () => {
+      autoFillStockName(
+        codeId,
+        codeId === "wCode" ? "wName" : "hName"
+      );
+    });
+
+    input.addEventListener("blur", () => {
+      autoFillStockName(
+        codeId,
+        codeId === "wCode" ? "wName" : "hName"
+      );
+    });
+  }
+});</script></body></html>
