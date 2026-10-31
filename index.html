@@ -103,7 +103,53 @@ async function fillStockName(codeInputId,nameInputId){
 const quickCodeInput=$('quickCode');
 if(quickCodeInput){quickCodeInput.addEventListener('change',()=>{const code=quickCodeInput.value.trim().toUpperCase();const name=knownStockName(code);if(name)$('quickResult').innerHTML=`<div class="card"><div class="stockname">${esc(name)} <span class="pill">股票名稱</span></div><div class="quote-status">已辨識股票代號 ${esc(code)}；股價仍需由行情服務查詢。</div></div>`;});}
 
-async function quote(code){let exchange=/^\d{4,6}$/.test(code)?(code.startsWith('0')?'otc':'tse'):'tse';let candidates=[`${exchange}_${code}.tw`];if(exchange==='tse')candidates.push(`otc_${code}.tw`);for(const ch of candidates){try{const url='https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch='+encodeURIComponent(ch)+'&json=1&delay=0';const r=await fetch(url,{cache:'no-store'});if(!r.ok)continue;const j=await r.json(),x=j.msgArray&&j.msgArray[0];if(x&&(x.z&&x.z!=='-'||x.y&&x.y!=='-'))return {price:num(x.z&&x.z!=='-'?x.z:x.y),name:x.n||'',time:x.t||'',exchange:ch.startsWith('otc')?'櫃買':'上市'};}catch(e){}}throw new Error('行情服務未回應或瀏覽器限制跨網域存取')}
+async function quote(code) {
+  code = String(code).trim();
+
+  if (!/^\d{4,6}$/.test(code)) {
+    throw new Error('股票代號格式錯誤');
+  }
+
+  const api = 'https://taigu-stock-api.ben3346.workers.dev/quote?code='
+    + encodeURIComponent(code);
+
+  const response = await fetch(api, {
+    method: 'GET',
+    cache: 'no-store'
+  });
+
+  let data;
+
+  try {
+    data = await response.json();
+  } catch (e) {
+    throw new Error('行情後端回傳資料格式錯誤');
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || '行情後端連線失敗');
+  }
+
+  const x = data.msgArray && data.msgArray[0];
+
+  if (!x) {
+    throw new Error('查無此股票行情');
+  }
+
+  const rawPrice = x.z && x.z !== '-' ? x.z : x.y;
+  const price = num(rawPrice);
+
+  if (!(price > 0)) {
+    throw new Error('目前沒有有效的股票價格');
+  }
+
+  return {
+    price: price,
+    name: x.n || '',
+    time: x.t || '',
+    exchange: x.exchange || '上市'
+  };
+}
 async function lookup(code, target){if(!code)return;target.innerHTML='<div class="muted">查詢中…</div>';try{let q=await quote(code);target.innerHTML=`<div class="card"><div class="stockname">${esc(q.name||code)} <span class="pill">${q.exchange}</span></div><div class="value" style="font-size:28px;font-weight:900">${money(q.price)}</div><div class="quote-status">行情時間：${esc(q.time||'交易所未提供時間')} · 以交易所回傳資料為準</div></div>`;$('quoteStatus').textContent='最近查價：'+new Date().toLocaleTimeString('zh-TW');let w=state.watch.find(w=>w.code===code);if(w){w.livePrice=q.price;w.name=w.name||q.name;w.status='行情已取得'}let h=state.holdings.find(h=>h.code===code);if(h){h.price=q.price;h.name=h.name||q.name}save();checkAlertsForCode(code,q.price)}catch(e){const known=knownStockName(code);target.innerHTML=`<div class="signal warn"><strong>${known?esc(known)+'（'+esc(code)+'）':'目前無法取得即時行情'}</strong><p>${known?'已辨識股票名稱，但目前無法取得即時股價。':esc(e.message)+'。'} 可手動輸入價格，或開啟券商 App 確認。</p></div>`}}
 $('quickSearch').onclick=()=>lookup($('quickCode').value.trim(),$('quickResult'));$('quickCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('quickSearch').click()});
 function alertKey(code,type,price){return `${code}:${type}:${price}`}
