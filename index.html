@@ -75,8 +75,36 @@ $('runAnalysis').onclick=analyze;
 $('fetchAnalyzeBtn').onclick=async()=>{let code=$('aCode').value.trim();if(!code)return alert('請先輸入股票代號');$('fetchAnalyzeBtn').disabled=true;try{let q=await quote(code);$('aPrice').value=q.price;let h=state.holdings.find(x=>x.code===code);if(h){h.price=q.price;h.name=h.name||q.name;save()}$('analysisResult').insertAdjacentHTML('afterbegin',`<div class="notice">已取得行情 ${money(q.price)}（${esc(q.time||'交易所時間未提供')}），技術指標仍需自行補齊。</div>`);analyze()}catch(e){alert('行情取得失敗：'+e.message)}finally{$('fetchAnalyzeBtn').disabled=false}};
 $('copyHoldingBtn').onclick=()=>{let code=$('aCode').value.trim(),h=state.holdings.find(x=>x.code===code);if(!h)return alert('請先輸入已建立的持股代號');$('aPrice').value=num(h.price)||num(h.cost);$('aEntry').value=num(h.cost)||'';if(h.stop&&h.cost)$('aRisk').value=Math.max(.1,Math.min(30,(h.cost-h.stop)/h.cost*100)).toFixed(1);analyze()};
 function analyzeStock(code){go('analysis');$('aCode').value=code;let h=state.holdings.find(x=>x.code===code),w=state.watch.find(x=>x.code===code);if(h&&h.price)$('aPrice').value=h.price;else if(w&&w.livePrice)$('aPrice').value=w.livePrice;else if(w&&w.price)$('aPrice').value=w.price;analyze()}
+// 股票代號自動帶入名稱：常用代號優先使用已確認名稱，其他代號再嘗試由行情服務取得
+const knownStockNames={
+  '00981A':'主動統一台股增長',
+  '2330':'台積電',
+  '0050':'元大台灣50',
+  '0056':'元大高股息',
+  '00878':'國泰永續高股息'
+};
+function knownStockName(code){return knownStockNames[String(code||'').trim().toUpperCase()]||'';}
+async function fillStockName(codeInputId,nameInputId){
+  const codeInput=$(codeInputId),nameInput=$(nameInputId);
+  if(!codeInput||!nameInput)return;
+  const code=codeInput.value.trim().toUpperCase();
+  if(!code)return;
+  const known=knownStockName(code);
+  if(known){nameInput.value=known;return;}
+  // 其他代號：若行情服務可用，使用其回傳名稱；查不到時不覆蓋使用者輸入
+  try{const q=await quote(code);if(q.name)nameInput.value=q.name;}catch(e){}
+}
+['wCode','hCode'].forEach(id=>{
+  const el=$(id);if(!el)return;
+  const nameId=id==='wCode'?'wName':'hName';
+  el.addEventListener('change',()=>fillStockName(id,nameId));
+  el.addEventListener('blur',()=>fillStockName(id,nameId));
+});
+const quickCodeInput=$('quickCode');
+if(quickCodeInput){quickCodeInput.addEventListener('change',()=>{const code=quickCodeInput.value.trim().toUpperCase();const name=knownStockName(code);if(name)$('quickResult').innerHTML=`<div class="card"><div class="stockname">${esc(name)} <span class="pill">股票名稱</span></div><div class="quote-status">已辨識股票代號 ${esc(code)}；股價仍需由行情服務查詢。</div></div>`;});}
+
 async function quote(code){let exchange=/^\d{4,6}$/.test(code)?(code.startsWith('0')?'otc':'tse'):'tse';let candidates=[`${exchange}_${code}.tw`];if(exchange==='tse')candidates.push(`otc_${code}.tw`);for(const ch of candidates){try{const url='https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch='+encodeURIComponent(ch)+'&json=1&delay=0';const r=await fetch(url,{cache:'no-store'});if(!r.ok)continue;const j=await r.json(),x=j.msgArray&&j.msgArray[0];if(x&&(x.z&&x.z!=='-'||x.y&&x.y!=='-'))return {price:num(x.z&&x.z!=='-'?x.z:x.y),name:x.n||'',time:x.t||'',exchange:ch.startsWith('otc')?'櫃買':'上市'};}catch(e){}}throw new Error('行情服務未回應或瀏覽器限制跨網域存取')}
-async function lookup(code, target){if(!code)return;target.innerHTML='<div class="muted">查詢中…</div>';try{let q=await quote(code);target.innerHTML=`<div class="card"><div class="stockname">${esc(q.name||code)} <span class="pill">${q.exchange}</span></div><div class="value" style="font-size:28px;font-weight:900">${money(q.price)}</div><div class="quote-status">行情時間：${esc(q.time||'交易所未提供時間')} · 以交易所回傳資料為準</div></div>`;$('quoteStatus').textContent='最近查價：'+new Date().toLocaleTimeString('zh-TW');let w=state.watch.find(w=>w.code===code);if(w){w.livePrice=q.price;w.name=w.name||q.name;w.status='行情已取得'}let h=state.holdings.find(h=>h.code===code);if(h){h.price=q.price;h.name=h.name||q.name}save();checkAlertsForCode(code,q.price)}catch(e){target.innerHTML=`<div class="signal warn"><strong>目前無法取得即時行情</strong><p>${esc(e.message)}。可手動輸入價格，或開啟券商 App 確認。</p></div>`}}
+async function lookup(code, target){if(!code)return;target.innerHTML='<div class="muted">查詢中…</div>';try{let q=await quote(code);target.innerHTML=`<div class="card"><div class="stockname">${esc(q.name||code)} <span class="pill">${q.exchange}</span></div><div class="value" style="font-size:28px;font-weight:900">${money(q.price)}</div><div class="quote-status">行情時間：${esc(q.time||'交易所未提供時間')} · 以交易所回傳資料為準</div></div>`;$('quoteStatus').textContent='最近查價：'+new Date().toLocaleTimeString('zh-TW');let w=state.watch.find(w=>w.code===code);if(w){w.livePrice=q.price;w.name=w.name||q.name;w.status='行情已取得'}let h=state.holdings.find(h=>h.code===code);if(h){h.price=q.price;h.name=h.name||q.name}save();checkAlertsForCode(code,q.price)}catch(e){const known=knownStockName(code);target.innerHTML=`<div class="signal warn"><strong>${known?esc(known)+'（'+esc(code)+'）':'目前無法取得即時行情'}</strong><p>${known?'已辨識股票名稱，但目前無法取得即時股價。':esc(e.message)+'。'} 可手動輸入價格，或開啟券商 App 確認。</p></div>`}}
 $('quickSearch').onclick=()=>lookup($('quickCode').value.trim(),$('quickResult'));$('quickCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('quickSearch').click()});
 function alertKey(code,type,price){return `${code}:${type}:${price}`}
 function notifyAlert(title,body){if('Notification'in window&&Notification.permission==='granted'){try{new Notification(title,{body,icon:'icon-192.svg'})}catch(e){}}}
@@ -92,77 +120,4 @@ function download(blob,name){let a=document.createElement('a');a.href=URL.create
 $('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!x||!Array.isArray(x.watch)||!Array.isArray(x.holdings)||!Array.isArray(x.trades))throw Error('檔案格式不正確');if(confirm('匯入會覆蓋本機現有資料，確定繼續？')){state=x;state.alerts=Array.isArray(x.alerts)?x.alerts:[];state.settings={feeRate:1.425,feeDiscount:.28,taxRate:3,stopLossPct:5,targetProfitPct:10,...x.settings};save();alert('備份還原完成')}}catch(err){alert('匯入失敗：'+err.message)}e.target.value=''};
 $('clearBtn').onclick=()=>{if(confirm('確定清除這台裝置上的所有股票資料？此操作無法復原，請先備份。')){localStorage.removeItem(KEY);state={watch:[],holdings:[],trades:[],alerts:[],settings:{feeRate:1.425,feeDiscount:.28,taxRate:3,stopLossPct:5,targetProfitPct:10}};save()}};
 load();render();checkStopStatus();setInterval(()=>{if(document.visibilityState==='visible'&&state.holdings.length)refreshAll()},180000);if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
-// 股票代號自動帶入名稱
-const stockNameFallback = {
-  "00981A": "主動統一台股增長",
-  "2330": "台積電",
-  "0050": "元大台灣50",
-  "0056": "元大高股息",
-  "00878": "國泰永續高股息"
-};
-
-async function autoFillStockName(codeId, nameId) {
-  const codeInput = document.getElementById(codeId);
-  const nameInput = document.getElementById(nameId);
-
-  if (!codeInput || !nameInput) return;
-
-  const code = codeInput.value.trim().toUpperCase();
-  if (!code) return;
-
-  // 先使用已確認的名稱
-  if (stockNameFallback[code]) {
-    nameInput.value = stockNameFallback[code];
-    return;
-  }
-
-  // 再嘗試查詢交易所行情資料
-  nameInput.value = "查詢中…";
-
-  try {
-    for (const market of ["tse", "otc"]) {
-      const url =
-        "https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=" +
-        encodeURIComponent(market + "_" + code + ".tw") +
-        "&json=1&delay=0";
-
-      const response = await fetch(url, { cache: "no-store" });
-      if (!response.ok) continue;
-
-      const data = await response.json();
-      const stock = data.msgArray?.find(x => x.n);
-
-      if (stock && stock.n) {
-        nameInput.value = stock.n;
-        return;
-      }
-    }
-
-    nameInput.value = "";
-    alert("查不到此股票名稱，請確認代號是否正確。");
-  } catch (error) {
-    nameInput.value = stockNameFallback[code] || "";
-    if (!nameInput.value) {
-      alert("暫時無法查詢股票名稱，請稍後再試。");
-    }
-  }
-}
-
-["wCode", "hCode"].forEach(codeId => {
-  const input = document.getElementById(codeId);
-  if (input) {
-    input.addEventListener("change", () => {
-      autoFillStockName(
-        codeId,
-        codeId === "wCode" ? "wName" : "hName"
-      );
-    });
-
-    input.addEventListener("blur", () => {
-      autoFillStockName(
-        codeId,
-        codeId === "wCode" ? "wName" : "hName"
-      );
-    });
-  }
-});</script></body></html>
+</script></body></html>
