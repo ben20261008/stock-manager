@@ -77,7 +77,7 @@ $('copyHoldingBtn').onclick=()=>{let code=$('aCode').value.trim(),h=state.holdin
 function analyzeStock(code){go('analysis');$('aCode').value=code;let h=state.holdings.find(x=>x.code===code),w=state.watch.find(x=>x.code===code);if(h&&h.price)$('aPrice').value=h.price;else if(w&&w.livePrice)$('aPrice').value=w.livePrice;else if(w&&w.price)$('aPrice').value=w.price;analyze()}
 async function quote(code) {
   code = String(code).trim();
-  if (!/^\d{4,6}$/.test(code)) throw new Error('股票代號格式錯誤');
+  if (!/^[0-9A-Za-z]{4,6}$/.test(code)) throw new Error('股票代號格式錯誤');
   const api = 'https://taigu-stock-api.ben3346.workers.dev/quote?code=' + encodeURIComponent(code);
   let response;
   try {
