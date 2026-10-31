@@ -75,82 +75,31 @@ $('runAnalysis').onclick=analyze;
 $('fetchAnalyzeBtn').onclick=async()=>{let code=$('aCode').value.trim();if(!code)return alert('請先輸入股票代號');$('fetchAnalyzeBtn').disabled=true;try{let q=await quote(code);$('aPrice').value=q.price;let h=state.holdings.find(x=>x.code===code);if(h){h.price=q.price;h.name=h.name||q.name;save()}$('analysisResult').insertAdjacentHTML('afterbegin',`<div class="notice">已取得行情 ${money(q.price)}（${esc(q.time||'交易所時間未提供')}），技術指標仍需自行補齊。</div>`);analyze()}catch(e){alert('行情取得失敗：'+e.message)}finally{$('fetchAnalyzeBtn').disabled=false}};
 $('copyHoldingBtn').onclick=()=>{let code=$('aCode').value.trim(),h=state.holdings.find(x=>x.code===code);if(!h)return alert('請先輸入已建立的持股代號');$('aPrice').value=num(h.price)||num(h.cost);$('aEntry').value=num(h.cost)||'';if(h.stop&&h.cost)$('aRisk').value=Math.max(.1,Math.min(30,(h.cost-h.stop)/h.cost*100)).toFixed(1);analyze()};
 function analyzeStock(code){go('analysis');$('aCode').value=code;let h=state.holdings.find(x=>x.code===code),w=state.watch.find(x=>x.code===code);if(h&&h.price)$('aPrice').value=h.price;else if(w&&w.livePrice)$('aPrice').value=w.livePrice;else if(w&&w.price)$('aPrice').value=w.price;analyze()}
-// 股票代號自動帶入名稱：常用代號優先使用已確認名稱，其他代號再嘗試由行情服務取得
-const knownStockNames={
-  '00981A':'主動統一台股增長',
-  '2330':'台積電',
-  '0050':'元大台灣50',
-  '0056':'元大高股息',
-  '00878':'國泰永續高股息'
-};
-function knownStockName(code){return knownStockNames[String(code||'').trim().toUpperCase()]||'';}
-async function fillStockName(codeInputId,nameInputId){
-  const codeInput=$(codeInputId),nameInput=$(nameInputId);
-  if(!codeInput||!nameInput)return;
-  const code=codeInput.value.trim().toUpperCase();
-  if(!code)return;
-  const known=knownStockName(code);
-  if(known){nameInput.value=known;return;}
-  // 其他代號：若行情服務可用，使用其回傳名稱；查不到時不覆蓋使用者輸入
-  try{const q=await quote(code);if(q.name)nameInput.value=q.name;}catch(e){}
-}
-['wCode','hCode'].forEach(id=>{
-  const el=$(id);if(!el)return;
-  const nameId=id==='wCode'?'wName':'hName';
-  el.addEventListener('change',()=>fillStockName(id,nameId));
-  el.addEventListener('blur',()=>fillStockName(id,nameId));
-});
-const quickCodeInput=$('quickCode');
-if(quickCodeInput){quickCodeInput.addEventListener('change',()=>{const code=quickCodeInput.value.trim().toUpperCase();const name=knownStockName(code);if(name)$('quickResult').innerHTML=`<div class="card"><div class="stockname">${esc(name)} <span class="pill">股票名稱</span></div><div class="quote-status">已辨識股票代號 ${esc(code)}；股價仍需由行情服務查詢。</div></div>`;});}
-
 async function quote(code) {
   code = String(code).trim();
-
-  if (!/^\d{4,6}$/.test(code)) {
-    throw new Error('股票代號格式錯誤');
+  if (!/^\d{4,6}$/.test(code)) throw new Error('股票代號格式錯誤');
+  const api = 'https://taigu-stock-api.ben3346.workers.dev/quote?code=' + encodeURIComponent(code);
+  let response;
+  try {
+    response = await fetch(api, { method: 'GET', cache: 'no-store' });
+  } catch (e) {
+    throw new Error('無法連線至行情代理服務，請確認網路或 Cloudflare Worker 設定');
   }
-
-  const api = 'https://taigu-stock-api.ben3346.workers.dev/quote?code='
-    + encodeURIComponent(code);
-
-  const response = await fetch(api, {
-    method: 'GET',
-    cache: 'no-store'
-  });
-
   let data;
-
   try {
     data = await response.json();
   } catch (e) {
-    throw new Error('行情後端回傳資料格式錯誤');
+    throw new Error('行情代理回傳格式錯誤');
   }
-
-  if (!response.ok) {
-    throw new Error(data.error || '行情後端連線失敗');
-  }
-
+  if (!response.ok) throw new Error(data.error || ('行情代理服務錯誤（HTTP ' + response.status + '）'));
   const x = data.msgArray && data.msgArray[0];
-
-  if (!x) {
-    throw new Error('查無此股票行情');
-  }
-
+  if (!x) throw new Error(data.error || '查無此股票行情，請確認股票代號');
   const rawPrice = x.z && x.z !== '-' ? x.z : x.y;
   const price = num(rawPrice);
-
-  if (!(price > 0)) {
-    throw new Error('目前沒有有效的股票價格');
-  }
-
-  return {
-    price: price,
-    name: x.n || '',
-    time: x.t || '',
-    exchange: x.exchange || '上市'
-  };
+  if (!(price > 0)) throw new Error('目前沒有有效的股票價格，可能尚未開盤或行情尚未更新');
+  return { price, name: x.n || '', time: x.t || '', exchange: x.exchange || '上市' };
 }
-async function lookup(code, target){if(!code)return;target.innerHTML='<div class="muted">查詢中…</div>';try{let q=await quote(code);target.innerHTML=`<div class="card"><div class="stockname">${esc(q.name||code)} <span class="pill">${q.exchange}</span></div><div class="value" style="font-size:28px;font-weight:900">${money(q.price)}</div><div class="quote-status">行情時間：${esc(q.time||'交易所未提供時間')} · 以交易所回傳資料為準</div></div>`;$('quoteStatus').textContent='最近查價：'+new Date().toLocaleTimeString('zh-TW');let w=state.watch.find(w=>w.code===code);if(w){w.livePrice=q.price;w.name=w.name||q.name;w.status='行情已取得'}let h=state.holdings.find(h=>h.code===code);if(h){h.price=q.price;h.name=h.name||q.name}save();checkAlertsForCode(code,q.price)}catch(e){const known=knownStockName(code);target.innerHTML=`<div class="signal warn"><strong>${known?esc(known)+'（'+esc(code)+'）':'目前無法取得即時行情'}</strong><p>${known?'已辨識股票名稱，但目前無法取得即時股價。':esc(e.message)+'。'} 可手動輸入價格，或開啟券商 App 確認。</p></div>`}}
+async function lookup(code, target){if(!code)return;target.innerHTML='<div class="muted">查詢中…</div>';try{let q=await quote(code);target.innerHTML=`<div class="card"><div class="stockname">${esc(q.name||code)} <span class="pill">${q.exchange}</span></div><div class="value" style="font-size:28px;font-weight:900">${money(q.price)}</div><div class="quote-status">行情時間：${esc(q.time||'交易所未提供時間')} · 以交易所回傳資料為準</div></div>`;$('quoteStatus').textContent='最近查價：'+new Date().toLocaleTimeString('zh-TW');let w=state.watch.find(w=>w.code===code);if(w){w.livePrice=q.price;w.name=w.name||q.name;w.status='行情已取得'}let h=state.holdings.find(h=>h.code===code);if(h){h.price=q.price;h.name=h.name||q.name}save();checkAlertsForCode(code,q.price)}catch(e){target.innerHTML=`<div class="signal warn"><strong>目前無法取得即時行情</strong><p>${esc(e.message)}。可手動輸入價格，或開啟券商 App 確認。</p></div>`}}
 $('quickSearch').onclick=()=>lookup($('quickCode').value.trim(),$('quickResult'));$('quickCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('quickSearch').click()});
 function alertKey(code,type,price){return `${code}:${type}:${price}`}
 function notifyAlert(title,body){if('Notification'in window&&Notification.permission==='granted'){try{new Notification(title,{body,icon:'icon-192.svg'})}catch(e){}}}
