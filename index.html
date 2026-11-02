@@ -117,4 +117,43 @@ function download(blob,name){let a=document.createElement('a');a.href=URL.create
 $('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!x||!Array.isArray(x.watch)||!Array.isArray(x.holdings)||!Array.isArray(x.trades))throw Error('檔案格式不正確');if(confirm('匯入會覆蓋本機現有資料，確定繼續？')){state=x;state.alerts=Array.isArray(x.alerts)?x.alerts:[];state.settings={feeRate:1.425,feeDiscount:.28,taxRate:3,stopLossPct:5,targetProfitPct:10,...x.settings};save();alert('備份還原完成')}}catch(err){alert('匯入失敗：'+err.message)}e.target.value=''};
 $('clearBtn').onclick=()=>{if(confirm('確定清除這台裝置上的所有股票資料？此操作無法復原，請先備份。')){localStorage.removeItem(KEY);state={watch:[],holdings:[],trades:[],alerts:[],settings:{feeRate:1.425,feeDiscount:.28,taxRate:3,stopLossPct:5,targetProfitPct:10}};save()}};
 load();render();checkStopStatus();setInterval(()=>{if(document.visibilityState==='visible'&&state.holdings.length)refreshAll()},180000);
+// 輸入持股代號後，自動查詢並填入股票名稱
+(() => {
+  const codeInput = document.getElementById('hCode');
+  const nameInput = document.getElementById('hName');
+  if (!codeInput || !nameInput) return;
+
+  let lookupTimer;
+
+  codeInput.addEventListener('input', () => {
+    clearTimeout(lookupTimer);
+    const code = codeInput.value.trim().toUpperCase();
+
+    if (!/^[0-9A-Z]{4,6}$/.test(code)) return;
+
+    lookupTimer = setTimeout(async () => {
+      try {
+        const api = 'https://taigu-stock-api.ben3346.workers.dev/quote?code=' + encodeURIComponent(code);
+        const response = await fetch(api);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const stock = data.msgArray && data.msgArray[0];
+        const stockName = stock && stock.n;
+
+        if (
+          stockName &&
+          stockName !== '-' &&
+          codeInput.value.trim().toUpperCase() === code &&
+          !nameInput.value.trim()
+        ) {
+          nameInput.value = stockName;
+          nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      } catch (error) {
+        console.warn('股票名稱查詢失敗：', error);
+      }
+    }, 400);
+  });
+})();
 </script></body></html>
