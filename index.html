@@ -39,7 +39,7 @@
 <div class="formgrid"><div><label>股票代號</label><input id="aCode" placeholder="2330"></div><div><label>目前股價</label><input id="aPrice" type="number" step="0.01" placeholder="最新成交價"></div><div><label>5 日均線</label><input id="aMA5" type="number" step="0.01"></div><div><label>20 日均線</label><input id="aMA20" type="number" step="0.01"></div><div><label>60 日均線</label><input id="aMA60" type="number" step="0.01"></div><div><label>RSI（0–100）</label><input id="aRSI" type="number" min="0" max="100" step="0.1" placeholder="例如 52"></div><div><label>預計買進價</label><input id="aEntry" type="number" step="0.01" placeholder="選填"></div><div><label>可接受停損幅度（%）</label><input id="aRisk" type="number" min="0.1" max="30" step="0.1" value="5"></div><div><label>預期報酬風險比</label><select id="aRR"><option value="1.5">1.5 倍</option><option value="2" selected>2 倍</option><option value="3">3 倍</option></select></div><div style="display:flex;align-items:end"><button id="runAnalysis" type="button" style="width:100%">分析進出場條件</button></div></div><div class="section card" id="klineCard">
 <div class="section-head"><h2>📊 歷史 K 線圖</h2><span class="quote-status" id="klineStatus">輸入代號後載入</span></div>
 <div class="inline"><button type="button" class="secondary btnsmall" data-kmonths="1">1 個月</button><button type="button" class="secondary btnsmall active" data-kmonths="3">3 個月</button><button type="button" class="secondary btnsmall" data-kmonths="6">6 個月</button><button type="button" class="secondary btnsmall" data-kmonths="12">1 年</button><button type="button" id="loadKlineBtn">載入 K 線</button></div>
-<div class="section" style="height:340px;position:relative"><canvas id="klineCanvas" style="width:100%;height:100%;display:block"></canvas></div>
+<div class="section" style="height:340px;position:relative"><canvas id="klineCanvas" tabindex="0" aria-label="歷史 K 線圖，移動滑鼠可查看日期與股價" style="width:100%;height:100%;display:block;cursor:crosshair;touch-action:pan-y"></canvas></div>
 <p class="notice" id="klineSummary">圖表從歷史行情 API 讀取資料；均線、RSI、MACD 由收盤價計算。資料可能因交易所來源而不完整。</p><div id="klineIndicators" class="section"></div>
 </div>
 <div id="analysisResult" class="section"><div class="empty">輸入行情與技術指標後，按「分析進出場條件」。</div></div></div>
@@ -102,9 +102,14 @@ async function loadKline(){
  }catch(e){$('klineStatus').textContent='載入失敗';$('klineSummary').textContent='無法載入 K 線：'+e.message+'。請確認 Worker /history API 已部署。';}
  finally{btn.disabled=false;}
 }
+let klineHoverIndex = null, klineHoverY = null;
 function drawKline(){
- const can=$('klineCanvas');if(!can||!klineRows.length)return;const dpr=devicePixelRatio||1,rect=can.getBoundingClientRect(),w=Math.max(300,rect.width),h=Math.max(240,rect.height);can.width=w*dpr;can.height=h*dpr;const c=can.getContext('2d');c.scale(dpr,dpr);c.clearRect(0,0,w,h);
- const pad={l:48,r:10,t:18,b:26},pw=w-pad.l-pad.r,ph=h-pad.t-pad.b,volH=Math.min(55,ph*.22),priceH=ph-volH-10,rows=klineRows,hi=rows.map(x=>+x.high),lo=rows.map(x=>+x.low),max=Math.max(...hi),min=Math.min(...lo),range=max-min||1,y=p=>pad.t+(max-p)/range*priceH,step=pw/rows.length,bw=Math.max(2,Math.min(9,step*.6));
+ const can=$('klineCanvas');if(!can||!klineRows.length)return;
+ const dpr=devicePixelRatio||1,rect=can.getBoundingClientRect(),w=Math.max(300,rect.width),h=Math.max(240,rect.height);
+ can.width=w*dpr;can.height=h*dpr;const c=can.getContext('2d');c.scale(dpr,dpr);c.clearRect(0,0,w,h);
+ const pad={l:48,r:10,t:18,b:26},pw=w-pad.l-pad.r,ph=h-pad.t-pad.b,volH=Math.min(55,ph*.22),priceH=ph-volH-10;
+ const rows=klineRows,hi=rows.map(x=>+x.high),lo=rows.map(x=>+x.low),max=Math.max(...hi),min=Math.min(...lo),range=max-min||1;
+ const y=p=>pad.t+(max-p)/range*priceH,step=pw/rows.length,bw=Math.max(2,Math.min(9,step*.6));
  c.font='10px system-ui';c.fillStyle='#9aabc4';c.strokeStyle='#26364f';
  for(let i=0;i<=4;i++){let p=max-range*i/4,yy=y(p);c.beginPath();c.moveTo(pad.l,yy);c.lineTo(w-pad.r,yy);c.stroke();c.fillText(p.toFixed(1),2,yy+3);}
  rows.forEach((r,i)=>{let x=pad.l+step*(i+.5),o=y(+r.open),cl=y(+r.close),top=Math.min(o,cl),bh=Math.max(1,Math.abs(cl-o));c.strokeStyle=c.fillStyle=(+r.close>=+r.open?'#31d6a0':'#ff6678');c.beginPath();c.moveTo(x,y(+r.high));c.lineTo(x,y(+r.low));c.stroke();c.fillRect(x-bw/2,top,bw,bh);});
@@ -112,7 +117,39 @@ function drawKline(){
  let vt=pad.t+priceH+10,mv=Math.max(1,...rows.map(r=>+r.volume||0));rows.forEach((r,i)=>{let x=pad.l+step*(i+.5),bh=(+r.volume||0)/mv*volH;c.fillStyle=(+r.close>=+r.open?'#31d6a0':'#ff6678');c.fillRect(x-bw/2,vt+volH-bh,bw,bh);});
  c.fillStyle='#9aabc4';[0,Math.floor((rows.length-1)/2),rows.length-1].forEach(i=>{let x=pad.l+step*(i+.5);c.fillText(rows[i].date.slice(5),Math.max(pad.l,Math.min(w-40,x-14)),h-6);});
  c.fillStyle='#ffd479';c.fillText('MA5',pad.l,11);c.fillStyle='#75a7ff';c.fillText('MA20',pad.l+32,11);c.fillStyle='#c69cff';c.fillText('MA60',pad.l+75,11);
+ // Crosshair: vertical line tracks the selected trading day; horizontal line tracks the pointer's price level.
+ if(klineHoverIndex!==null && klineHoverIndex>=0 && klineHoverIndex<rows.length){
+   const i=klineHoverIndex,r=rows[i],x=pad.l+step*(i+.5);
+   const yy=Math.max(pad.t,Math.min(pad.t+priceH,klineHoverY==null?y(+r.close):klineHoverY));
+   c.save();c.strokeStyle='#e8eef8';c.lineWidth=1;c.setLineDash([4,3]);
+   c.beginPath();c.moveTo(x,pad.t);c.lineTo(x,vt+volH);c.stroke();
+   c.beginPath();c.moveTo(pad.l,yy);c.lineTo(w-pad.r,yy);c.stroke();c.setLineDash([]);
+   const priceAtY=max-(yy-pad.t)/priceH*range;
+   c.fillStyle='#e8eef8';c.fillRect(0,yy-9,pad.l-3,18);c.fillStyle='#142033';c.font='bold 10px system-ui';c.fillText(priceAtY.toFixed(2),2,yy+3);
+   // Highlight the selected candle.
+   c.strokeStyle='#fff';c.lineWidth=1.2;c.strokeRect(x-bw/2-2,Math.min(y(+r.open),y(+r.close))-2,bw+4,Math.max(4,Math.abs(y(+r.open)-y(+r.close))+4));
+   // Compact information card, placed on the side opposite the pointer when possible.
+   const lines=[String(r.date),`開 ${Number(r.open).toFixed(2)}  高 ${Number(r.high).toFixed(2)}`,`低 ${Number(r.low).toFixed(2)}  收 ${Number(r.close).toFixed(2)}`,`量 ${Number(r.volume||0).toLocaleString('en-US')}`];
+   c.font='11px system-ui';const boxW=160,boxH=68,bx=x+boxW+12>w?Math.max(pad.l,x-boxW-12):Math.min(w-boxW-4,x+12),by=pad.t+4;
+   c.fillStyle='rgba(12,20,34,.94)';c.fillRect(bx,by,boxW,boxH);c.strokeStyle='#8293ad';c.strokeRect(bx,by,boxW,boxH);c.fillStyle='#f2f6ff';
+   lines.forEach((line,j)=>c.fillText(line,bx+7,by+14+j*16));
+   // Crosshair label on the date axis.
+   const label=String(r.date).slice(5),lw=44,lx=Math.max(pad.l,Math.min(w-pad.r-lw,x-lw/2));
+   c.fillStyle='#e8eef8';c.fillRect(lx,h-pad.b+1,lw,18);c.fillStyle='#142033';c.fillText(label,lx+5,h-5);
+   c.restore();
+ }
 }
+const klineCanvas=$('klineCanvas');
+klineCanvas.addEventListener('mousemove',ev=>{
+ if(!klineRows.length)return;
+ const rect=klineCanvas.getBoundingClientRect(),x=ev.clientX-rect.left,yPos=ev.clientY-rect.top;
+ const w=Math.max(300,rect.width),h=Math.max(240,rect.height),padL=48,padR=10,padT=18,padB=26,pw=w-padL-padR;
+ const idx=Math.max(0,Math.min(klineRows.length-1,Math.floor((x-padL)/(pw/klineRows.length))));
+ klineHoverIndex=idx;klineHoverY=yPos;drawKline();
+});
+klineCanvas.addEventListener('mouseleave',()=>{klineHoverIndex=null;klineHoverY=null;if(klineRows.length)drawKline();});
+klineCanvas.addEventListener('touchstart',ev=>{if(!klineRows.length||!ev.touches.length)return;const rect=klineCanvas.getBoundingClientRect(),x=ev.touches[0].clientX-rect.left,yPos=ev.touches[0].clientY-rect.top,w=Math.max(300,rect.width),pw=w-48-10;klineHoverIndex=Math.max(0,Math.min(klineRows.length-1,Math.floor((x-48)/(pw/klineRows.length))));klineHoverY=yPos;drawKline();},{passive:true});
+klineCanvas.addEventListener('touchmove',ev=>{if(!klineRows.length||!ev.touches.length)return;const rect=klineCanvas.getBoundingClientRect();klineHoverY=ev.touches[0].clientY-rect.top;drawKline();},{passive:true});
 window.addEventListener('resize',()=>{if(klineRows.length)drawKline();});
 
 
