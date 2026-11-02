@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220"><meta name="description" content="台股掌帳：股票帳務、行情追蹤與風險提示">
+<link rel="manifest" href="manifest.webmanifest">
+<title>台股掌帳｜行動版</title>
+<style>
+:root{--bg:#0b1220;--panel:#121d30;--panel2:#18263b;--line:#26364f;--text:#eef4ff;--muted:#9aabc4;--green:#ff6678;--red:#31d6a0;--blue:#75a7ff;--gold:#ffd479}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#0b1220,#101b2c 65%,#0b1220);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Noto Sans TC",sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:11px;padding:10px 13px;background:#3978e8;color:white;font-weight:700}button.secondary{background:#263750;color:#e7efff}button.danger{background:#8d3044}input,select{width:100%;background:#0c1626;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:11px;min-width:0}label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}.wrap{max-width:1100px;margin:auto;padding:18px 14px 90px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.brand{font-size:22px;font-weight:900;letter-spacing:.5px}.sub{font-size:12px;color:var(--muted)}.badge{font-size:11px;color:#b7d0ff;border:1px solid #34507b;border-radius:99px;padding:5px 9px}.tabs{display:flex;gap:7px;overflow:auto;padding-bottom:12px;margin-bottom:8px}.tab{white-space:nowrap;background:#17253a;color:#b6c5dd}.tab.active{background:#3978e8;color:white}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.card{background:linear-gradient(145deg,#152238,#111b2d);border:1px solid var(--line);border-radius:17px;padding:15px;min-width:0;box-shadow:0 8px 22px #0002}.metric .label{color:var(--muted);font-size:12px}.metric .value{font-size:clamp(19px,3vw,27px);font-weight:850;margin-top:5px;overflow-wrap:anywhere}.metric .hint{font-size:12px;color:var(--muted);margin-top:3px}.section{margin-top:15px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.section-head h2{font-size:16px;margin:0}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.formgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.wide{grid-column:span 2}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:570px}th,td{text-align:left;padding:11px 9px;border-bottom:1px solid var(--line);white-space:nowrap}th{font-size:12px;color:var(--muted);font-weight:600}td{font-size:13px}.up{color:var(--green)}.down{color:var(--red)}.muted{color:var(--muted)}.pill{display:inline-block;border-radius:99px;padding:4px 8px;font-size:11px;background:#243754;color:#c7d9f5}.signal{border-radius:13px;padding:13px;background:#102c2b;border:1px solid #22584e}.signal.warn{background:#35291a;border-color:#6d5022}.signal.stop{background:#351c2a;border-color:#713349}.signal strong{font-size:16px}.signal p{margin:5px 0 0;color:#c1d0e5;font-size:13px}.notice{color:#b6c4d8;font-size:12px;line-height:1.6}.hidden{display:none!important}.empty{padding:22px;text-align:center;color:var(--muted)}.bottomnav{display:none}.btnsmall{padding:6px 9px;font-size:12px}.stockname{font-weight:800}.stockcode{font-size:11px;color:var(--muted)}.good{color:var(--red)}.bad{color:var(--green)}.quote-status{font-size:11px;color:var(--muted)}.inline{display:flex;gap:8px}.inline input{flex:1}.inline button{white-space:nowrap}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.wide{grid-column:span 2}.wrap{padding:13px 11px 95px}.top{align-items:flex-start}.brand{font-size:20px}.top-actions button{padding:8px}.bottomnav{display:flex;position:fixed;bottom:0;left:0;right:0;padding:8px max(8px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));background:#0b1220ed;border-top:1px solid var(--line);justify-content:space-around;z-index:5}.bottomnav button{font-size:11px;padding:9px 8px;background:transparent;color:var(--muted)}.bottomnav button.active{color:white;background:#233c62}.desktop-tabs{display:none}.card{padding:12px}.metric .value{font-size:22px}}
+</style>
+</head>
+<body><div class="wrap">
+<header class="top"><div><div class="brand">📈 台股掌帳</div><div class="sub">投資帳務・行情觀察・風險管理</div></div><div class="top-actions row" style="flex:0 0 auto"><span class="badge">行動版 PWA</span><button class="secondary" id="refreshBtn">更新行情</button></div></header>
+<nav class="tabs desktop-tabs" id="tabs"><button class="tab active" data-view="home">總覽</button><button class="tab" data-view="watch">自選行情</button><button class="tab" data-view="holdings">持股帳務</button><button class="tab" data-view="trades">交易紀錄</button><button class="tab" data-view="analysis">進出場分析</button><button class="tab" data-view="settings">設定／備份</button></nav>
+<section id="home" class="view">
+<div class="grid">
+<div class="card metric"><div class="label">持股市值</div><div class="value" id="mValue">$0</div><div class="hint">依持股數量 × 最新／成本價</div></div>
+<div class="card metric"><div class="label">未實現損益</div><div class="value" id="mUnreal">$0</div><div class="hint" id="mUnrealPct">尚未建立持股</div></div>
+<div class="card metric"><div class="label">已實現損益</div><div class="value" id="mReal">$0</div><div class="hint">依交易紀錄估算，含費用設定</div></div>
+<div class="card metric"><div class="label">持股檔數</div><div class="value" id="mCount">0</div><div class="hint">資料保存在目前裝置</div></div>
+</div>
+<div class="section card"><div class="section-head"><h2>🔎 快速查價</h2><span class="quote-status" id="quoteStatus">尚未更新</span></div><div class="inline"><input id="quickCode" placeholder="輸入台股代號，例如 2330"><button id="quickSearch">查詢</button></div><div id="quickResult" class="section"></div><p class="notice">行情來源可用性依交易所服務與網路而異；如無法取得，請以券商 App 報價為準。此工具不會下單。</p></div>
+<div class="section card"><div class="section-head"><h2>⭐ 自選清單</h2><button class="secondary btnsmall" data-goto="watch">管理自選</button></div><div id="homeWatch"></div></div>
+<div class="section card"><div class="section-head"><h2>🧭 今日風險提醒</h2></div><div class="signal warn"><strong>先設停損，再考慮進場</strong><p>系統只提供條件式技術觀察與帳務試算，不能保證買點或賣點準確。重大消息、跳空與流動性可能令停損價無法成交。</p></div></div>
+</section>
+<section id="watch" class="view hidden">
+<div class="card"><div class="section-head"><h2>自選股行情</h2><span class="quote-status" id="watchStatus">支援台股代號</span></div><div class="formgrid"><div><label>股票代號</label><input id="wCode" placeholder="2330"></div><div><label>股票名稱（選填）</label><input id="wName" placeholder="台積電"></div><div><label>觀察價格（選填）</label><input id="wPrice" type="number" step="0.01" placeholder="目前股價"></div><div style="display:flex;align-items:end"><button id="addWatch" style="width:100%">加入自選</button></div></div><div class="section-head" style="margin-top:18px"><h2>自選清單</h2><button class="secondary btnsmall" id="refreshWatch">更新全部</button></div><div class="tablewrap" id="watchTable"></div></div>
+</section>
+<section id="holdings" class="view hidden">
+<div class="card"><div class="section-head"><h2>新增／更新持股</h2><span class="pill">可自行修改成本與股數</span></div><form id="holdingForm"><div class="formgrid"><div><label>股票代號</label><input id="hCode" required placeholder="2330"></div><div><label>股票名稱</label><input id="hName" placeholder="台積電"></div><div><label>持有股數</label><input id="hQty" type="number" min="1" required placeholder="1000"></div><div><label>平均成本（每股）</label><input id="hCost" type="number" min="0" step="0.01" required placeholder="900"></div><div><label>最新股價（選填）</label><input id="hPrice" type="number" min="0" step="0.01" placeholder="空白則用成本"></div><div><label>停損價（空白自動計算）</label><input id="hStop" type="number" min="0" step="0.01" placeholder="預設成本下 5%"></div><div><label>停利目標（空白自動計算）</label><input id="hTarget" type="number" min="0" step="0.01" placeholder="預設成本上 10%"></div><div style="display:flex;align-items:end"><button style="width:100%">儲存持股</button></div></div></form><div class="section tablewrap" id="holdingsTable"></div></div>
+</section>
+<section id="trades" class="view hidden">
+<div class="card"><div class="section-head"><h2>新增交易紀錄</h2><span class="pill">買進／賣出</span></div><form id="tradeForm"><div class="formgrid"><div><label>交易日期</label><input id="tDate" type="date" required></div><div><label>股票代號</label><input id="tCode" required placeholder="2330"></div><div><label>交易方向</label><select id="tSide"><option value="buy">買進</option><option value="sell">賣出</option></select></div><div><label>股數</label><input id="tQty" type="number" min="1" required></div><div><label>成交單價</label><input id="tPrice" type="number" min="0.01" step="0.01" required></div><div><label>備註</label><input id="tNote" placeholder="選填"></div><div style="display:flex;align-items:end"><button style="width:100%">新增紀錄</button></div></div></form><div class="section tablewrap" id="tradesTable"></div></div>
+</section>
+<section id="analysis" class="view hidden">
+<div class="card"><div class="section-head"><h2>智慧進出場分析</h2><span class="pill">技術條件評分</span></div><p class="notice">目前採用可解釋的技術規則分析，並非連接大型語言模型的生成式 AI。股價可自動查詢；5／20／60 日均線與 RSI 需自行輸入，避免把不存在的資料當成真實行情。若要真正的雲端 AI，需另接安全的後端服務，不能把私人 API 金鑰放在公開網頁。</p><div class="inline section"><button id="fetchAnalyzeBtn" type="button">先抓取行情再分析</button><button id="copyHoldingBtn" type="button" class="secondary">帶入持股資料</button></div>
+<div class="formgrid"><div><label>股票代號</label><input id="aCode" placeholder="2330"></div><div><label>目前股價</label><input id="aPrice" type="number" step="0.01" placeholder="最新成交價"></div><div><label>5 日均線</label><input id="aMA5" type="number" step="0.01"></div><div><label>20 日均線</label><input id="aMA20" type="number" step="0.01"></div><div><label>60 日均線</label><input id="aMA60" type="number" step="0.01"></div><div><label>RSI（0–100）</label><input id="aRSI" type="number" min="0" max="100" step="0.1" placeholder="例如 52"></div><div><label>預計買進價</label><input id="aEntry" type="number" step="0.01" placeholder="選填"></div><div><label>可接受停損幅度（%）</label><input id="aRisk" type="number" min="0.1" max="30" step="0.1" value="5"></div><div><label>預期報酬風險比</label><select id="aRR"><option value="1.5">1.5 倍</option><option value="2" selected>2 倍</option><option value="3">3 倍</option></select></div><div style="display:flex;align-items:end"><button id="runAnalysis" type="button" style="width:100%">分析進出場條件</button></div></div><div class="section card" id="klineCard">
+<div class="section-head"><h2>📊 歷史 K 線圖</h2><span class="quote-status" id="klineStatus">輸入代號後載入</span></div>
+<div class="inline"><button type="button" class="secondary btnsmall" data-kmonths="1">1 個月</button><button type="button" class="secondary btnsmall active" data-kmonths="3">3 個月</button><button type="button" class="secondary btnsmall" data-kmonths="6">6 個月</button><button type="button" class="secondary btnsmall" data-kmonths="12">1 年</button><button type="button" id="loadKlineBtn">載入 K 線</button></div>
+<div class="section" style="height:340px;position:relative"><canvas id="klineCanvas" style="width:100%;height:100%;display:block"></canvas></div>
+<p class="notice" id="klineSummary">圖表從歷史行情 API 讀取資料；均線、RSI、MACD 由收盤價計算。資料可能因交易所來源而不完整。</p><div id="klineIndicators" class="section"></div>
+</div>
+<div id="analysisResult" class="section"><div class="empty">輸入行情與技術指標後，按「分析進出場條件」。</div></div></div>
+</section>
+<section id="settings" class="view hidden">
+<div class="card"><div class="section-head"><h2>手續費與交易設定</h2></div><div class="formgrid"><div><label>買進手續費率（‰）</label><input id="feeRate" type="number" min="0" step="0.01" value="1.425"></div><div><label>手續費折扣（例如 0.28）</label><input id="feeDiscount" type="number" min="0" max="1" step="0.01" value="0.28"></div><div><label>證交稅（賣出，‰）</label><input id="taxRate" type="number" min="0" step="0.1" value="3"></div><div><label>預設自動停損幅度（%）</label><input id="stopLossPct" type="number" min="0.1" max="50" step="0.1" value="5"></div><div><label>預設自動停利幅度（%）</label><input id="targetProfitPct" type="number" min="0.1" max="100" step="0.1" value="10"></div><div style="display:flex;align-items:end"><button id="saveSettings" style="width:100%">儲存設定</button></div></div><p class="notice">預設值僅供估算，請依國泰證券實際網路下單費率、個人折扣與交易商品調整。台股股票一般賣出證交稅常見為 3‰，ETF 等商品可能不同。</p></div>
+<div class="section card"><div class="section-head"><h2>自動停損／停利提醒</h2></div><p class="notice">設定在持股中的停損價與目標價後，系統會在更新行情時自動檢查，並在本頁開啟期間每 3 分鐘嘗試檢查一次。可開啟瀏覽器通知。網頁關閉、裝置休眠、行情來源失效時無法保證持續監控；不會自動下單。</p><div class="row"><button id="notifyBtn">啟用瀏覽器通知</button><button id="checkStopsBtn" class="secondary">立即檢查持股</button></div><div id="alertStatus" class="section notice">尚未檢查</div><div id="alertList" class="section"></div></div><div class="section card"><div class="section-head"><h2>資料備份／還原</h2></div><p class="notice">資料存在這台裝置的瀏覽器中。換手機、平板或電腦不會自動同步，請定期匯出備份，再於另一裝置匯入。</p><div class="row"><button id="exportBtn">匯出備份 JSON</button><button class="secondary" id="exportCsv">匯出交易 CSV</button></div><div class="section"><label>選擇 JSON 備份檔還原</label><input id="importFile" type="file" accept=".json,application/json"></div><div class="section"><button class="danger" id="clearBtn">清除本機所有資料</button></div></div>
+<div class="section card"><h2>行情與風險說明</h2><p class="notice">本程式不是券商下單系統，也不連結國泰證券帳戶。公開行情端點可能延遲、限流或變更，畫面會標示行情取得狀態。AI／條件分析僅供研究，不構成投資建議；進場前請自行確認成交量、公告、財報、交易成本與風險承受度。</p><p class="notice">若要真正的即時行情與雲端 AI 分析，需要選定合法行情 API／服務並設定 API 金鑰；不要把私人金鑰直接放進公開 GitHub 網頁。</p></div>
+</section>
+</div>
+<div class="bottomnav" id="bottomnav"><button class="active" data-view="home">總覽</button><button data-view="watch">行情</button><button data-view="holdings">持股</button><button data-view="analysis">分析</button><button data-view="settings">設定</button></div>
+<script>
+const $=id=>document.getElementById(id), money=n=>new Intl.NumberFormat('zh-TW',{style:'currency',currency:'TWD',maximumFractionDigits:0}).format(Number(n)||0), num=n=>Number(n)||0;
+const KEY='twstock-account-v1';
+let state={watch:[],holdings:[],trades:[],alerts:[],settings:{feeRate:1.425,feeDiscount:.28,taxRate:3,stopLossPct:5,targetProfitPct:10}};
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'{}');state={...state,...x};state.alerts=Array.isArray(state.alerts)?state.alerts:[];state.settings={...{feeRate:1.425,feeDiscount:.28,taxRate:3,stopLossPct:5,targetProfitPct:10},...(state.settings||{})}}catch(e){}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
+function fee(amount){return Math.floor(amount*num(state.settings.feeRate)/1000*num(state.settings.feeDiscount))}
+function tradeCost(t){let gross=t.qty*t.price, f=fee(gross), tax=t.side==='sell'?Math.floor(gross*num(state.settings.taxRate)/1000):0;return gross+f+tax}
+function realized(){let pos={};let total=0;for(const t of [...state.trades].sort((a,b)=>a.date.localeCompare(b.date))){let p=pos[t.code]||(pos[t.code]={qty:0,cost:0});let gross=t.qty*t.price;if(t.side==='buy'){p.qty+=t.qty;p.cost+=gross+fee(gross)}else{let q=Math.min(t.qty,p.qty),avg=p.qty?p.cost/p.qty:0;total+=q*t.price-fee(gross)-Math.floor(gross*num(state.settings.taxRate)/1000)-avg*q;p.qty-=q;p.cost-=avg*q}}return total}
+function render(){let val=0,cost=0;state.holdings.forEach(h=>{let p=num(h.price)||num(h.cost);val+=p*num(h.qty);cost+=num(h.cost)*num(h.qty)});$('mValue').textContent=money(val);$('mUnreal').textContent=money(val-cost);$('mUnreal').className='value '+(val>=cost?'good':'bad');$('mUnrealPct').textContent=cost?((val-cost)/cost*100).toFixed(2)+'% 相對成本':'尚未建立持股';$('mReal').textContent=money(realized());$('mCount').textContent=state.holdings.length;
+$('homeWatch').innerHTML=state.watch.length?watchRows(true):'<div class="empty">尚未加入自選股</div>';
+$('watchTable').innerHTML=state.watch.length?`<table><thead><tr><th>股票</th><th>最新價</th><th>觀察價</th><th>動作</th></tr></thead><tbody>${state.watch.map((w,i)=>`<tr><td><div class="stockname">${esc(w.name||w.code)}</div><div class="stockcode">${esc(w.code)}</div></td><td>${w.livePrice?money(w.livePrice):'—'}<div class="stockcode">${esc(w.status||'尚未查價')}</div></td><td>${w.price?money(w.price):'—'}</td><td><button class="secondary btnsmall" onclick="analyzeStock('${esc(w.code)}')">分析</button> <button class="danger btnsmall" onclick="removeWatch(${i})">刪除</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">加入股票代號開始追蹤</div>';
+$('holdingsTable').innerHTML=state.holdings.length?`<table><thead><tr><th>股票</th><th>股數</th><th>成本</th><th>現價</th><th>損益</th><th>停損／目標</th><th></th></tr></thead><tbody>${state.holdings.map((h,i)=>{let p=num(h.price)||num(h.cost),pl=(p-num(h.cost))*num(h.qty);return `<tr><td><b>${esc(h.name||h.code)}</b><div class="stockcode">${esc(h.code)}</div></td><td>${num(h.qty).toLocaleString()}</td><td>${money(h.cost)}</td><td>${money(p)}</td><td class="${pl>=0?'good':'bad'}">${money(pl)}</td><td>${h.stop?money(h.stop):'—'} / ${h.target?money(h.target):'—'}</td><td><button class="danger btnsmall" onclick="removeHolding(${i})">刪除</button></td></tr>`}).join('')}</tbody></table>`:'<div class="empty">尚未新增持股</div>';
+$('alertList').innerHTML=state.holdings.length?state.holdings.map(h=>{let p=num(h.price),s=num(h.stop),t=num(h.target);let st=s&&p&&p<=s?'⚠️ 已觸及停損價':t&&p&&p>=t?'🎯 已觸及停利目標':'監控中';return `<div class="signal ${s&&p&&p<=s?'stop':t&&p&&p>=t?'':'warn'} section"><strong>${esc(h.name||h.code)}（${esc(h.code)}）</strong><p>最新價：${p?money(p):'尚無行情'}｜停損：${s?money(s):'未設定'}｜停利：${t?money(t):'未設定'}</p><p>${st}</p></div>`}).join(''):'<div class="empty">請先在「持股帳務」設定持股與停損／目標價。</div>';
+$('tradesTable').innerHTML=state.trades.length?`<table><thead><tr><th>日期</th><th>股票</th><th>方向</th><th>股數</th><th>單價</th><th>預估費稅</th><th>備註</th><th></th></tr></thead><tbody>${[...state.trades].reverse().map((t,ri)=>{let i=state.trades.length-1-ri;return `<tr><td>${esc(t.date)}</td><td>${esc(t.code)}</td><td>${t.side==='buy'?'買進':'賣出'}</td><td>${t.qty}</td><td>${money(t.price)}</td><td>${money(tradeCost(t)-t.qty*t.price)}</td><td>${esc(t.note||'')}</td><td><button class="danger btnsmall" onclick="removeTrade(${i})">刪除</button></td></tr>`}).join('')}</tbody></table>`:'<div class="empty">尚無交易紀錄</div>';
+$('feeRate').value=state.settings.feeRate;$('feeDiscount').value=state.settings.feeDiscount;$('taxRate').value=state.settings.taxRate;$('stopLossPct').value=state.settings.stopLossPct??5;$('targetProfitPct').value=state.settings.targetProfitPct??10}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function watchRows(small=false){return `<div class="tablewrap"><table><thead><tr><th>股票</th><th>最新價</th><th>觀察價</th></tr></thead><tbody>${state.watch.slice(0,8).map(w=>`<tr><td><b>${esc(w.name||w.code)}</b><div class="stockcode">${esc(w.code)}</div></td><td>${w.livePrice?money(w.livePrice):'—'}</td><td>${w.price?money(w.price):'—'}</td></tr>`).join('')}</tbody></table></div>`}
+function removeWatch(i){state.watch.splice(i,1);save()}function removeHolding(i){if(confirm('確定刪除此持股？')){state.holdings.splice(i,1);save()}}function removeTrade(i){if(confirm('確定刪除此交易紀錄？')){state.trades.splice(i,1);save()}}
+function go(view){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!==view));document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.view)));document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
+$('addWatch').onclick=()=>{let code=$('wCode').value.trim().toUpperCase();if(!code)return alert('請輸入股票代號');if(state.watch.some(w=>w.code===code))return alert('這檔股票已在自選清單');state.watch.push({code,name:$('wName').value.trim(),price:num($('wPrice'))||null});$('wCode').value='';$('wName').value='';$('wPrice').value='';save()};
+$('holdingForm').onsubmit=e=>{e.preventDefault();let h={code:$('hCode').value.trim().toUpperCase(),name:$('hName').value.trim(),qty:num($('hQty').value),cost:num($('hCost').value),price:num($('hPrice').value)||null,stop:num($('hStop').value)||num($('hCost').value)*(1-(num(state.settings.stopLossPct)||5)/100),target:num($('hTarget').value)||num($('hCost').value)*(1+(num(state.settings.targetProfitPct)||10)/100)};let old=state.holdings.find(x=>x.code===h.code);if(old)Object.assign(old,h);else state.holdings.push(h);e.target.reset();save();alert('持股已儲存')};
+$('tDate').value=new Date().toISOString().slice(0,10);$('tradeForm').onsubmit=e=>{e.preventDefault();state.trades.push({date:$('tDate').value,code:$('tCode').value.trim().toUpperCase(),side:$('tSide').value,qty:num($('tQty').value),price:num($('tPrice').value),note:$('tNote').value.trim()});e.target.reset();$('tDate').value=new Date().toISOString().slice(0,10);save();alert('交易紀錄已新增')};
+$('saveSettings').onclick=()=>{state.settings={...state.settings,feeRate:num($('feeRate').value),feeDiscount:num($('feeDiscount').value),taxRate:num($('taxRate').value),stopLossPct:num($('stopLossPct').value)||5,targetProfitPct:num($('targetProfitPct').value)||10};save();alert('費率設定已儲存')};
+function analyze(){let p=num($('aPrice').value),m5=num($('aMA5').value),m20=num($('aMA20').value),m60=num($('aMA60').value),r=$('aRSI').value===''?null:num($('aRSI').value),entry=num($('aEntry').value)||p,risk=Math.min(30,Math.max(.1,num($('aRisk').value)||5))/100,rr=num($('aRR').value);if(!p)return $('analysisResult').innerHTML='<div class="signal warn"><strong>請先輸入目前股價</strong><p>其餘技術指標可依需要補齊。</p></div>';let score=0,notes=[];if(m5&&m20){if(m5>m20){score++;notes.push('5 日均線高於 20 日均線，短線偏強。')}else{score--;notes.push('5 日均線低於 20 日均線，短線偏弱。')}}if(m20&&m60){if(m20>m60){score++;notes.push('20 日均線高於 60 日均線，中期趨勢偏多。')}else{score--;notes.push('20 日均線低於 60 日均線，中期趨勢偏弱。')}}if(m20){if(p>m20){score++;notes.push('股價在 20 日均線上方。')}else{score--;notes.push('股價在 20 日均線下方。')}}if(r!==null){if(r<30){score++;notes.push('RSI 低於 30，可能超賣，但仍可能續跌。')}else if(r>70){score--;notes.push('RSI 高於 70，短線過熱風險提高。')}else if(r>=45&&r<=60){score++;notes.push('RSI 位於 45–60，動能相對中性偏穩。')}}let label=score>=2?'偏多觀察':score<=-2?'偏弱／等待':'訊號混合，等待確認',cls=score>=2?'':score<=-2?'stop':'warn';let stop=entry*(1-risk),target=entry+(entry-stop)*rr;let text=notes.length?notes.join(' '):'目前提供的技術指標不足，結果僅顯示風險價位，不產生趨勢判斷。';$('analysisResult').innerHTML=`<div class="signal ${cls}"><strong>${esc($('aCode').value||'此股票')}：${label}（條件分數 ${score}）</strong><p>${text}</p></div><div class="grid section"><div class="card metric"><div class="label">參考進場價</div><div class="value">${money(entry)}</div><div class="hint">${$('aEntry').value?'使用你輸入的預計買價':'暫以目前股價估算'}</div></div><div class="card metric"><div class="label">風險停損參考</div><div class="value bad">${money(stop)}</div><div class="hint">約 -${(risk*100).toFixed(1)}%</div></div><div class="card metric"><div class="label">目標出場參考</div><div class="value good">${money(target)}</div><div class="hint">風險報酬比 1:${rr}</div></div><div class="card metric"><div class="label">進場狀態</div><div class="value" style="font-size:18px">${score>=2?'等待回測／確認':score<=-2?'暫緩追價':'等待更多訊號'}</div><div class="hint">不是即時買賣指令</div></div></div><p class="notice">條件式規劃：若價格跌破停損參考，重新評估是否出場；到達目標價可分批停利或移動停損。請把交易量、支撐壓力、重大消息與自身風險納入判斷。跳空時實際成交可能差於設定價格。</p>`}
+
+// K 線圖與技術指標
+let klineMonths = 3, klineRows = [];
+function ma(values, n) { return values.map((v,i)=>i+1<n?null:values.slice(i+1-n,i+1).reduce((a,b)=>a+b,0)/n); }
+function rsiCalc(v,n=14) { return v.map((_,i)=>{if(i<n)return null;let g=0,l=0;for(let j=i-n+1;j<=i;j++){let d=v[j]-v[j-1];if(d>0)g+=d;else l-=d;}return l===0?100:100-100/(1+g/l);}); }
+function emaCalc(v,n) { let out=[], e=null, k=2/(n+1);v.forEach((x,i)=>{if(i===n-1){e=v.slice(0,n).reduce((a,b)=>a+b,0)/n;out[i]=e;}else if(i>=n){e=x*k+e*(1-k);out[i]=e;}else out[i]=null;});return out; }
+document.querySelectorAll('[data-kmonths]').forEach(b=>b.addEventListener('click',()=>{klineMonths=Number(b.dataset.kmonths);document.querySelectorAll('[data-kmonths]').forEach(x=>x.classList.toggle('active',x===b));loadKline();}));
+$('loadKlineBtn').addEventListener('click',loadKline);
+$('aCode').addEventListener('change',()=>{if($('aCode').value.trim())loadKline();});
+async function loadKline(){
+ const code=$('aCode').value.trim().toUpperCase(); if(!/^[0-9A-Z]{4,6}$/.test(code)){ $('klineStatus').textContent='請先輸入有效股票代號';return;}
+ const btn=$('loadKlineBtn');btn.disabled=true;$('klineStatus').textContent='載入中…';
+ try{
+  const u='https://taigu-stock-api.ben3346.workers.dev/history?code='+encodeURIComponent(code)+'&months='+klineMonths;
+  const res=await fetch(u,{cache:'no-store'}), data=await res.json();
+  if(!res.ok||!Array.isArray(data.data)||!data.data.length)throw Error(data.error||'沒有歷史資料');
+  klineRows=data.data;drawKline();
+  const c=klineRows.map(x=>Number(x.close)), m5=ma(c,5),m20=ma(c,20),m60=ma(c,60),r=rsiCalc(c),e12=emaCalc(c,12),e26=emaCalc(c,26),macd=c.map((_,i)=>e12[i]==null||e26[i]==null?null:e12[i]-e26[i]);
+  const last=a=>{for(let i=a.length-1;i>=0;i--)if(a[i]!=null&&Number.isFinite(a[i]))return a[i];return null;};
+  $('klineIndicators').innerHTML='<div class="grid">'+[['MA5',last(m5)],['MA20',last(m20)],['MA60',last(m60)],['RSI(14)',last(r)],['MACD(12,26)',last(macd)]].map(([n,v])=>'<div class="card metric"><div class="label">'+n+'</div><div class="value" style="font-size:18px">'+(v==null?'資料不足':(n.startsWith('MA')?money(v):v.toFixed(2)))+'</div></div>').join('')+'</div>';
+  if(last(m5)!=null)$('aMA5').value=last(m5).toFixed(2);if(last(m20)!=null)$('aMA20').value=last(m20).toFixed(2);if(last(m60)!=null)$('aMA60').value=last(m60).toFixed(2);if(last(r)!=null)$('aRSI').value=last(r).toFixed(1);
+  const z=klineRows[klineRows.length-1];$('klineStatus').textContent=code+'｜'+klineRows.length+' 筆';$('klineSummary').textContent='資料日期：'+klineRows[0].date+' 至 '+z.date+'；最新收盤 '+money(z.close)+(data.warning&&data.warning.length?'；部分月份資料未取得。':'');
+ }catch(e){$('klineStatus').textContent='載入失敗';$('klineSummary').textContent='無法載入 K 線：'+e.message+'。請確認 Worker /history API 已部署。';}
+ finally{btn.disabled=false;}
+}
+function drawKline(){
+ const can=$('klineCanvas');if(!can||!klineRows.length)return;const dpr=devicePixelRatio||1,rect=can.getBoundingClientRect(),w=Math.max(300,rect.width),h=Math.max(240,rect.height);can.width=w*dpr;can.height=h*dpr;const c=can.getContext('2d');c.scale(dpr,dpr);c.clearRect(0,0,w,h);
+ const pad={l:48,r:10,t:18,b:26},pw=w-pad.l-pad.r,ph=h-pad.t-pad.b,volH=Math.min(55,ph*.22),priceH=ph-volH-10,rows=klineRows,hi=rows.map(x=>+x.high),lo=rows.map(x=>+x.low),max=Math.max(...hi),min=Math.min(...lo),range=max-min||1,y=p=>pad.t+(max-p)/range*priceH,step=pw/rows.length,bw=Math.max(2,Math.min(9,step*.6));
+ c.font='10px system-ui';c.fillStyle='#9aabc4';c.strokeStyle='#26364f';
+ for(let i=0;i<=4;i++){let p=max-range*i/4,yy=y(p);c.beginPath();c.moveTo(pad.l,yy);c.lineTo(w-pad.r,yy);c.stroke();c.fillText(p.toFixed(1),2,yy+3);}
+ rows.forEach((r,i)=>{let x=pad.l+step*(i+.5),o=y(+r.open),cl=y(+r.close),top=Math.min(o,cl),bh=Math.max(1,Math.abs(cl-o));c.strokeStyle=c.fillStyle=(+r.close>=+r.open?'#31d6a0':'#ff6678');c.beginPath();c.moveTo(x,y(+r.high));c.lineTo(x,y(+r.low));c.stroke();c.fillRect(x-bw/2,top,bw,bh);});
+ const closes=rows.map(x=>+x.close);[{n:5,col:'#ffd479'},{n:20,col:'#75a7ff'},{n:60,col:'#c69cff'}].forEach(s=>{c.beginPath();c.strokeStyle=s.col;c.lineWidth=1.3;let started=false;ma(closes,s.n).forEach((v,i)=>{if(v==null)return;let x=pad.l+step*(i+.5),yy=y(v);if(!started){c.moveTo(x,yy);started=true;}else c.lineTo(x,yy);});c.stroke();});
+ let vt=pad.t+priceH+10,mv=Math.max(1,...rows.map(r=>+r.volume||0));rows.forEach((r,i)=>{let x=pad.l+step*(i+.5),bh=(+r.volume||0)/mv*volH;c.fillStyle=(+r.close>=+r.open?'#31d6a0':'#ff6678');c.fillRect(x-bw/2,vt+volH-bh,bw,bh);});
+ c.fillStyle='#9aabc4';[0,Math.floor((rows.length-1)/2),rows.length-1].forEach(i=>{let x=pad.l+step*(i+.5);c.fillText(rows[i].date.slice(5),Math.max(pad.l,Math.min(w-40,x-14)),h-6);});
+ c.fillStyle='#ffd479';c.fillText('MA5',pad.l,11);c.fillStyle='#75a7ff';c.fillText('MA20',pad.l+32,11);c.fillStyle='#c69cff';c.fillText('MA60',pad.l+75,11);
+}
+window.addEventListener('resize',()=>{if(klineRows.length)drawKline();});
+
+
+$('runAnalysis').onclick=analyze;
+$('fetchAnalyzeBtn').onclick=async()=>{let code=$('aCode').value.trim();if(!code)return alert('請先輸入股票代號');$('fetchAnalyzeBtn').disabled=true;try{let q=await quote(code);$('aPrice').value=q.price;let h=state.holdings.find(x=>x.code===code);if(h){h.price=q.price;h.name=h.name||q.name;save()}$('analysisResult').insertAdjacentHTML('afterbegin',`<div class="notice">已取得行情 ${money(q.price)}（${esc(q.time||'交易所時間未提供')}），技術指標仍需自行補齊。</div>`);analyze()}catch(e){alert('行情取得失敗：'+e.message)}finally{$('fetchAnalyzeBtn').disabled=false}};
+$('copyHoldingBtn').onclick=()=>{let code=$('aCode').value.trim(),h=state.holdings.find(x=>x.code===code);if(!h)return alert('請先輸入已建立的持股代號');$('aPrice').value=num(h.price)||num(h.cost);$('aEntry').value=num(h.cost)||'';if(h.stop&&h.cost)$('aRisk').value=Math.max(.1,Math.min(30,(h.cost-h.stop)/h.cost*100)).toFixed(1);analyze()};
+function analyzeStock(code){go('analysis');$('aCode').value=code;let h=state.holdings.find(x=>x.code===code),w=state.watch.find(x=>x.code===code);if(h&&h.price)$('aPrice').value=h.price;else if(w&&w.livePrice)$('aPrice').value=w.livePrice;else if(w&&w.price)$('aPrice').value=w.price;analyze()}
+async function quote(code) {
+  code = String(code).trim();
+  if (!/^[0-9A-Za-z]{4,6}$/.test(code)) throw new Error('股票代號格式錯誤');
+  const api = 'https://taigu-stock-api.ben3346.workers.dev/quote?code=' + encodeURIComponent(code);
+  let response;
+  try {
+    response = await fetch(api, { method: 'GET', cache: 'no-store' });
+  } catch (e) {
+    throw new Error('無法連線至行情代理服務，請確認網路或 Cloudflare Worker 設定');
+  }
+  let data;
+  try {
+    data = await response.json();
+  } catch (e) {
+    throw new Error('行情代理回傳格式錯誤');
+  }
+  if (!response.ok) throw new Error(data.error || ('行情代理服務錯誤（HTTP ' + response.status + '）'));
+  const x = data.msgArray && data.msgArray[0];
+  if (!x) throw new Error(data.error || '查無此股票行情，請確認股票代號');
+  const rawPrice = (x.trade && x.trade.z && x.trade.z !== '-' && Number(x.trade.z) > 0)
+  ? x.trade.z
+  : (x.z && x.z !== '-' && Number(x.z) > 0 ? x.z : null);
+  const price = num(rawPrice);
+  if (!(price > 0)) throw new Error('目前沒有有效的股票價格，可能尚未開盤或行情尚未更新');
+  return { price, name: x.n || '', time: (x.trade && x.trade.t) || x.t || '', exchange: x.exchange || '上市' };
+}
+async function lookup(code, target){if(!code)return;target.innerHTML='<div class="muted">查詢中…</div>';try{let q=await quote(code);target.innerHTML=`<div class="card"><div class="stockname">${esc(q.name||code)} <span class="pill">${q.exchange}</span></div><div class="value" style="font-size:28px;font-weight:900">${money(q.price)}</div><div class="quote-status">行情時間：${esc(q.time||'交易所未提供時間')} · 以交易所回傳資料為準</div></div>`;$('quoteStatus').textContent='最近查價：'+new Date().toLocaleTimeString('zh-TW');let w=state.watch.find(w=>w.code===code);if(w){w.livePrice=q.price;w.name=w.name||q.name;w.status='行情已取得'}let h=state.holdings.find(h=>h.code===code);if(h){h.price=q.price;h.name=h.name||q.name}save();checkAlertsForCode(code,q.price)}catch(e){target.innerHTML=`<div class="signal warn"><strong>目前無法取得即時行情</strong><p>${esc(e.message)}。可手動輸入價格，或開啟券商 App 確認。</p></div>`}}
+$('quickSearch').onclick=()=>lookup($('quickCode').value.trim(),$('quickResult'));$('quickCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('quickSearch').click()});
+function alertKey(code,type,price){return `${code}:${type}:${price}`}
+function notifyAlert(title,body){if('Notification'in window&&Notification.permission==='granted'){try{new Notification(title,{body,icon:'icon-192.svg'})}catch(e){}}}
+function checkAlertsForCode(code,price){let h=state.holdings.find(x=>x.code===code);if(!h||!price)return;for(const [type,threshold,condition,label] of [['stop',num(h.stop),price<=num(h.stop),'停損提醒'],['target',num(h.target),price>=num(h.target),'停利提醒']]){if(!threshold||!condition)continue;let k=alertKey(code,type,threshold);if(!state.alerts.includes(k)){state.alerts.push(k);notifyAlert(`${label}：${h.name||code}`,`最新價 ${money(price)}，設定價 ${money(threshold)}。請自行確認券商行情與交易決策。`);$('alertStatus').textContent=`${new Date().toLocaleString('zh-TW')}：${h.name||code} ${label}，目前 ${money(price)}。請確認行情。`;}}}
+function checkStopStatus(){let hits=state.holdings.filter(h=>num(h.price)>0&&((num(h.stop)>0&&num(h.price)<=num(h.stop))||(num(h.target)>0&&num(h.price)>=num(h.target))));$('alertStatus').textContent=`最後檢查：${new Date().toLocaleString('zh-TW')}；持股 ${state.holdings.length} 檔，已觸發條件 ${hits.length} 檔。`;}
+$('notifyBtn').onclick=async()=>{if(!('Notification'in window))return alert('此瀏覽器不支援通知，請查看頁面內提醒。');try{let p=await Notification.requestPermission();alert(p==='granted'?'已啟用瀏覽器通知':'尚未允許通知；仍可在頁面內查看提醒。')}catch(e){alert('無法啟用通知，請檢查瀏覽器網站權限。')}};
+$('checkStopsBtn').onclick=refreshAll;
+async function refreshAll(){let btn=$('refreshBtn');btn.disabled=true;btn.textContent='更新中…';for(let w of state.watch){try{let q=await quote(w.code);w.livePrice=q.price;w.name=w.name||q.name;w.status='行情已取得'}catch(e){w.status='暫時無法更新'}}for(let h of state.holdings){try{let q=await quote(h.code);h.price=q.price;h.name=h.name||q.name;checkAlertsForCode(h.code,q.price)}catch(e){}}save();checkStopStatus();btn.disabled=false;btn.textContent='更新行情';$('watchStatus').textContent='更新完成：'+new Date().toLocaleTimeString('zh-TW')}
+$('refreshBtn').onclick=refreshAll;$('refreshWatch').onclick=refreshAll;
+$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});download(blob,'台股掌帳備份_'+new Date().toISOString().slice(0,10)+'.json')};
+$('exportCsv').onclick=()=>{let rows=[['日期','股票代號','方向','股數','單價','備註'],...state.trades.map(t=>[t.date,t.code,t.side==='buy'?'買進':'賣出',t.qty,t.price,t.note||''])];let csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');download(new Blob([csv],{type:'text/csv;charset=utf-8'}),'台股掌帳交易紀錄.csv')};
+function download(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!x||!Array.isArray(x.watch)||!Array.isArray(x.holdings)||!Array.isArray(x.trades))throw Error('檔案格式不正確');if(confirm('匯入會覆蓋本機現有資料，確定繼續？')){state=x;state.alerts=Array.isArray(x.alerts)?x.alerts:[];state.settings={feeRate:1.425,feeDiscount:.28,taxRate:3,stopLossPct:5,targetProfitPct:10,...x.settings};save();alert('備份還原完成')}}catch(err){alert('匯入失敗：'+err.message)}e.target.value=''};
+$('clearBtn').onclick=()=>{if(confirm('確定清除這台裝置上的所有股票資料？此操作無法復原，請先備份。')){localStorage.removeItem(KEY);state={watch:[],holdings:[],trades:[],alerts:[],settings:{feeRate:1.425,feeDiscount:.28,taxRate:3,stopLossPct:5,targetProfitPct:10}};save()}};
+load();render();checkStopStatus();setInterval(()=>{if(document.visibilityState==='visible'&&state.holdings.length)refreshAll()},180000);
+// 輸入持股代號後，自動查詢並填入股票名稱
+(() => {
+  const codeInput = document.getElementById('hCode');
+  const nameInput = document.getElementById('hName');
+  if (!codeInput || !nameInput) return;
+
+  let lookupTimer;
+
+  codeInput.addEventListener('input', () => {
+    clearTimeout(lookupTimer);
+    const code = codeInput.value.trim().toUpperCase();
+
+    if (!/^[0-9A-Z]{4,6}$/.test(code)) return;
+
+    lookupTimer = setTimeout(async () => {
+      try {
+        const api = 'https://taigu-stock-api.ben3346.workers.dev/quote?code=' + encodeURIComponent(code);
+        const response = await fetch(api);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const stock = data.msgArray && data.msgArray[0];
+        const stockName = stock && stock.n;
+
+        if (
+          stockName &&
+          stockName !== '-' &&
+          codeInput.value.trim().toUpperCase() === code &&
+          !nameInput.value.trim()
+        ) {
+          nameInput.value = stockName;
+          nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      } catch (error) {
+        console.warn('股票名稱查詢失敗：', error);
+      }
+    }, 400);
+  });
+})();
+</script></body></html>
