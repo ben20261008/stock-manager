@@ -99,7 +99,7 @@ async function quote(code) {
   : (x.z && x.z !== '-' && Number(x.z) > 0 ? x.z : null);
   const price = num(rawPrice);
   if (!(price > 0)) throw new Error('目前沒有有效的股票價格，可能尚未開盤或行情尚未更新');
-  return { price, name: x.n || '', time: x.t || '', exchange: x.exchange || '上市' };
+  return { price, name: x.n || '', time: (x.trade && x.trade.t) || x.t || '', exchange: x.exchange || '上市' };
 }
 async function lookup(code, target){if(!code)return;target.innerHTML='<div class="muted">查詢中…</div>';try{let q=await quote(code);target.innerHTML=`<div class="card"><div class="stockname">${esc(q.name||code)} <span class="pill">${q.exchange}</span></div><div class="value" style="font-size:28px;font-weight:900">${money(q.price)}</div><div class="quote-status">行情時間：${esc(q.time||'交易所未提供時間')} · 以交易所回傳資料為準</div></div>`;$('quoteStatus').textContent='最近查價：'+new Date().toLocaleTimeString('zh-TW');let w=state.watch.find(w=>w.code===code);if(w){w.livePrice=q.price;w.name=w.name||q.name;w.status='行情已取得'}let h=state.holdings.find(h=>h.code===code);if(h){h.price=q.price;h.name=h.name||q.name}save();checkAlertsForCode(code,q.price)}catch(e){target.innerHTML=`<div class="signal warn"><strong>目前無法取得即時行情</strong><p>${esc(e.message)}。可手動輸入價格，或開啟券商 App 確認。</p></div>`}}
 $('quickSearch').onclick=()=>lookup($('quickCode').value.trim(),$('quickResult'));$('quickCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('quickSearch').click()});
