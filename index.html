@@ -94,7 +94,9 @@ async function quote(code) {
   if (!response.ok) throw new Error(data.error || ('行情代理服務錯誤（HTTP ' + response.status + '）'));
   const x = data.msgArray && data.msgArray[0];
   if (!x) throw new Error(data.error || '查無此股票行情，請確認股票代號');
-  const rawPrice = x.z && x.z !== '-' ? x.z : x.y;
+  const rawPrice = (x.trade && x.trade.z && x.trade.z !== '-' && Number(x.trade.z) > 0)
+  ? x.trade.z
+  : (x.z && x.z !== '-' && Number(x.z) > 0 ? x.z : null);
   const price = num(rawPrice);
   if (!(price > 0)) throw new Error('目前沒有有效的股票價格，可能尚未開盤或行情尚未更新');
   return { price, name: x.n || '', time: x.t || '', exchange: x.exchange || '上市' };
